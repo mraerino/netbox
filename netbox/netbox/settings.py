@@ -3,12 +3,14 @@ import os
 import socket
 import sys
 import warnings
+import importlib
 
 from django.contrib.messages import constants as messages
 from django.core.exceptions import ImproperlyConfigured
 
 try:
-    from netbox import configuration
+    mod_name = os.getenv('NETBOX_CONFIG', 'netbox.configuration')
+    configuration = importlib.import_module(mod_name)
 except ImportError:
     raise ImproperlyConfigured(
         "Configuration file is not present. Please define netbox/netbox/configuration.py per the documentation."
@@ -22,7 +24,7 @@ if sys.version_info[0] < 3:
         DeprecationWarning
     )
 
-VERSION = '2.3.1'
+VERSION = '2.3.2-dev'
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

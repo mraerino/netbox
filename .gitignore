@@ -10,3 +10,7 @@
 fabfile.py
 *.swp
 gunicorn_config.py
+
+# Heroku
+.env
+venv/
