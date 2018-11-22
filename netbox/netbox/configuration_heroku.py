@@ -21,6 +21,9 @@ DATABASE = dj_database_url.config()
 # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-SECRET_KEY
 SECRET_KEY = os.environ.get('SECRET_KEY', '')
 
+BASE_URL = os.environ.get('BASE_URL')
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', True)
+
 #########################
 #                       #
 #   Optional settings   #
