@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 import netaddr
 from netaddr.core import AddrFormatError
@@ -8,7 +9,7 @@ from netaddr.core import AddrFormatError
 from dcim.models import Site, Device, Interface
 from extras.filters import CustomFieldFilterSet
 from tenancy.models import Tenant
-from utilities.filters import NumericInFilter
+from utilities.filters import NumericInFilter, TagFilter
 from virtualization.models import VirtualMachine
 from .constants import IPADDRESS_ROLE_CHOICES, IPADDRESS_STATUS_CHOICES, PREFIX_STATUS_CHOICES, VLAN_STATUS_CHOICES
 from .models import Aggregate, IPAddress, Prefix, RIR, Role, Service, VLAN, VLANGroup, VRF
@@ -30,6 +31,7 @@ class VRFFilter(CustomFieldFilterSet, django_filters.FilterSet):
         to_field_name='slug',
         label='Tenant (slug)',
     )
+    tag = TagFilter()
 
     def search(self, queryset, name, value):
         if not value.strip():
@@ -69,6 +71,7 @@ class AggregateFilter(CustomFieldFilterSet, django_filters.FilterSet):
         to_field_name='slug',
         label='RIR (slug)',
     )
+    tag = TagFilter()
 
     class Meta:
         model = Aggregate
@@ -167,6 +170,7 @@ class PrefixFilter(CustomFieldFilterSet, django_filters.FilterSet):
         choices=PREFIX_STATUS_CHOICES,
         null_value=None
     )
+    tag = TagFilter()
 
     class Meta:
         model = Prefix
@@ -233,6 +237,10 @@ class IPAddressFilter(CustomFieldFilterSet, django_filters.FilterSet):
         method='search_by_parent',
         label='Parent prefix',
     )
+    address = django_filters.CharFilter(
+        method='filter_address',
+        label='Address',
+    )
     mask_length = django_filters.NumberFilter(
         method='filter_mask_length',
         label='Mask length',
@@ -289,6 +297,7 @@ class IPAddressFilter(CustomFieldFilterSet, django_filters.FilterSet):
     role = django_filters.MultipleChoiceFilter(
         choices=IPADDRESS_ROLE_CHOICES
     )
+    tag = TagFilter()
 
     class Meta:
         model = IPAddress
@@ -311,6 +320,17 @@ class IPAddressFilter(CustomFieldFilterSet, django_filters.FilterSet):
             query = str(netaddr.IPNetwork(value.strip()).cidr)
             return queryset.filter(address__net_host_contained=query)
         except (AddrFormatError, ValueError):
+            return queryset.none()
+
+    def filter_address(self, queryset, name, value):
+        if not value.strip():
+            return queryset
+        try:
+            # Match address and subnet mask
+            if '/' in value:
+                return queryset.filter(address=value)
+            return queryset.filter(address__net_host=value)
+        except ValidationError:
             return queryset.none()
 
     def filter_mask_length(self, queryset, name, value):
@@ -394,6 +414,7 @@ class VLANFilter(CustomFieldFilterSet, django_filters.FilterSet):
         choices=VLAN_STATUS_CHOICES,
         null_value=None
     )
+    tag = TagFilter()
 
     class Meta:
         model = VLAN
@@ -411,6 +432,10 @@ class VLANFilter(CustomFieldFilterSet, django_filters.FilterSet):
 
 
 class ServiceFilter(django_filters.FilterSet):
+    q = django_filters.CharFilter(
+        method='search',
+        label='Search',
+    )
     device_id = django_filters.ModelMultipleChoiceFilter(
         queryset=Device.objects.all(),
         label='Device (ID)',
@@ -431,7 +456,14 @@ class ServiceFilter(django_filters.FilterSet):
         to_field_name='name',
         label='Virtual machine (name)',
     )
+    tag = TagFilter()
 
     class Meta:
         model = Service
         fields = ['name', 'protocol', 'port']
+
+    def search(self, queryset, name, value):
+        if not value.strip():
+            return queryset
+        qs_filter = Q(name__icontains=value) | Q(description__icontains=value)
+        return queryset.filter(qs_filter)

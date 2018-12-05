@@ -366,17 +366,41 @@ table.component-list td.subtable td {
     padding-bottom: 6px;
     padding-top: 6px;
 }
+table.interface-ips th {
+    font-size: 80%;
+    font-weight: normal;
+}
 
 /* Reports */
 table.reports td.method {
     font-family: monospace;
     padding-left: 30px;
 }
-table.reports td.stats label {
+td.report-stats label {
     display: inline-block;
     line-height: 14px;
     margin-bottom: 0;
     min-width: 40px;
+}
+table.report th {
+    position: relative;
+}
+table.report th a {
+    position: absolute;
+    top: -51px;
+}
+
+/* Rendered Markdown */
+.rendered-markdown table {
+    width: 100%;
+}
+.rendered-markdown th {
+    border-bottom: 2px solid #dddddd;
+    padding: 8px;
+}
+.rendered-markdown td {
+    border-top: 1px solid #dddddd;
+    padding: 8px;
 }
 
 /* AJAX loader */
